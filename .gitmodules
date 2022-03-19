@@ -3,7 +3,7 @@
 	url = https://github.com/Zubax/zubax_chibios
 [submodule "firmware/libuavcan"]
 	path = firmware/libuavcan
-	url = https://github.com/UAVCAN/libuavcan
+	url = git@github.com:WshgL/libuavcan.git
 [submodule "docs/reference_manual/document_templates"]
 	path = docs/reference_manual/document_templates
 	url = https://github.com/Zubax/document_templates
@@ -12,4 +12,4 @@
 	url = https://github.com/Zubax/drwatson
 [submodule "tools/drwatson/pyuavcan"]
 	path = tools/drwatson/pyuavcan
-	url = https://github.com/UAVCAN/pyuavcan
+	url = git@github.com:WshgL/pyuavcan.git
