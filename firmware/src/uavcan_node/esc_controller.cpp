@@ -36,6 +36,7 @@
 #include <uavcan/equipment/esc/RawCommand.hpp>
 #include <uavcan/equipment/esc/RPMCommand.hpp>
 #include <uavcan/equipment/esc/Status.hpp>
+#include <uavcan/equipment/esc/RPMFeedback.hpp>
 #include <zubax_chibios/os.hpp>
 #include <motor/motor.h>
 #include <temperature_sensor.hpp>
@@ -46,6 +47,7 @@ namespace
 {
 
 uavcan::Publisher<uavcan::equipment::esc::Status>* pub_status;
+uavcan::Publisher<uavcan::equipment::esc::RPMFeedback>* pub_rpm_fb;
 
 unsigned self_index;
 unsigned command_ttl_ms;
@@ -92,30 +94,34 @@ void cb_rpm_command(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::
 	}
 }
 
-void cb_10Hz(const uavcan::TimerEvent& event)
+void cb_esc(const uavcan::TimerEvent& event)
 {
-	uavcan::equipment::esc::Status msg;
+	// Publish RPMFeedback
+	uavcan::equipment::esc::RPMFeedback msg_rpm_fb;
 
-	msg.esc_index = self_index;
-	msg.rpm = motor_get_rpm();
-	motor_get_input_voltage_current(&msg.voltage, &msg.current);
-	msg.power_rating_pct = static_cast<unsigned>(motor_get_duty_cycle() * 100 + 0.5F);
-	msg.error_count = motor_get_zc_failures_since_start();
+	msg_rpm_fb.esc_index = self_index;
+	msg_rpm_fb.rpm = motor_get_rpm();
 
-	msg.temperature = float(temperature_sensor::get_temperature_K());
-	if (msg.temperature < 0) {
-		msg.temperature = std::numeric_limits<float>::quiet_NaN();
+	pub_rpm_fb->broadcast(msg_rpm_fb);
+
+	// Publish Status
+	uavcan::equipment::esc::Status msg_status;
+
+	msg_status.esc_index = self_index;
+	// msg_status.rpm = motor_get_rpm();
+	motor_get_input_voltage_current(&msg_status.voltage, &msg_status.current);
+	msg_status.power_rating_pct = static_cast<unsigned>(motor_get_duty_cycle() * 100 + 0.5F);
+	msg_status.error_count = motor_get_zc_failures_since_start();
+
+	msg_status.temperature = float(temperature_sensor::get_temperature_K());
+	if (msg_status.temperature < 0) {
+		msg_status.temperature = std::numeric_limits<float>::quiet_NaN();
 	}
 
-	if (motor_is_idle()) {
-		// Lower the publish rate to 1Hz if the motor is not running
-		static uavcan::MonotonicTime prev_pub_ts;
-		if ((event.scheduled_time - prev_pub_ts).toMSec() >= 990) {
-			prev_pub_ts = event.scheduled_time;
-			pub_status->broadcast(msg);
-		}
-	} else {
-		pub_status->broadcast(msg);
+	static uavcan::MonotonicTime prev_pub_ts;
+	if ((event.scheduled_time - prev_pub_ts).toMSec() >= 990) { // 1hz
+		prev_pub_ts = event.scheduled_time;
+		pub_status->broadcast(msg_status);
 	}
 }
 
@@ -125,7 +131,7 @@ int init_esc_controller(uavcan::INode& node)
 {
 	static uavcan::Subscriber<uavcan::equipment::esc::RawCommand> sub_raw_command(node);
 	static uavcan::Subscriber<uavcan::equipment::esc::RPMCommand> sub_rpm_command(node);
-	static uavcan::Timer timer_10hz(node);
+	static uavcan::Timer timer_esc(node);
 
 	self_index = param_esc_index.get();
 	command_ttl_ms = param_cmd_ttl_ms.get();
@@ -149,8 +155,14 @@ int init_esc_controller(uavcan::INode& node)
 		return res;
 	}
 
-	timer_10hz.setCallback(&cb_10Hz);
-	timer_10hz.startPeriodic(uavcan::MonotonicDuration::fromMSec(100));
+	pub_rpm_fb = new uavcan::Publisher<uavcan::equipment::esc::RPMFeedback>(node);
+	res = pub_rpm_fb->init();
+	if (res != 0) {
+		return res;
+	}
+
+	timer_esc.setCallback(&cb_esc);
+	timer_esc.startPeriodic(uavcan::MonotonicDuration::fromMSec(100)); // 10hz
 
 	return 0;
 }
