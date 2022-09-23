@@ -49,10 +49,12 @@ namespace
 uavcan::Publisher<uavcan::equipment::esc::Status>* pub_status;
 uavcan::Publisher<uavcan::equipment::esc::RPMFeedback>* pub_rpm_fb;
 
+unsigned publish_rate_ms;
 unsigned self_index;
 unsigned command_ttl_ms;
 float max_dc_to_start;
 
+os::config::Param<unsigned> param_pub_rate_ms("pub_rate_ms",     100,      1,   100); // default: 10hz
 os::config::Param<unsigned> param_esc_index("esc_index",           0,      0,    15);
 os::config::Param<unsigned> param_cmd_ttl_ms("cmd_ttl_ms",       200,    100,  5000);
 os::config::Param<float> param_cmd_start_dc("cmd_start_dc",      1.0,   0.01,   1.0);
@@ -133,6 +135,7 @@ int init_esc_controller(uavcan::INode& node)
 	static uavcan::Subscriber<uavcan::equipment::esc::RPMCommand> sub_rpm_command(node);
 	static uavcan::Timer timer_esc(node);
 
+	publish_rate_ms = param_pub_rate_ms.get();
 	self_index = param_esc_index.get();
 	command_ttl_ms = param_cmd_ttl_ms.get();
 	max_dc_to_start = param_cmd_start_dc.get();
@@ -162,7 +165,7 @@ int init_esc_controller(uavcan::INode& node)
 	}
 
 	timer_esc.setCallback(&cb_esc);
-	timer_esc.startPeriodic(uavcan::MonotonicDuration::fromMSec(100)); // 10hz
+	timer_esc.startPeriodic(uavcan::MonotonicDuration::fromMSec(publish_rate_ms));
 
 	return 0;
 }
