@@ -116,8 +116,8 @@ static struct params
 CONFIG_PARAM_FLOAT("mot_v_min",        2.5,    0.5,     10.0)
 CONFIG_PARAM_FLOAT("mot_v_spinup",     0.5,    0.01,    10.0)
 CONFIG_PARAM_FLOAT("mot_spup_vramp_t", 3.0,    0.0,     10.0)
-CONFIG_PARAM_FLOAT("mot_dc_accel",     0.6,   0.001,   0.6)
-CONFIG_PARAM_FLOAT("mot_dc_slope",     25.0,    0.1,     25.0)
+CONFIG_PARAM_FLOAT("mot_dc_accel",     0.45,   0.001,   0.5)
+CONFIG_PARAM_FLOAT("mot_dc_slope",     18.0,    0.1,     20.0)
 
 CONFIG_PARAM_INT("mot_num_poles",  14,     2,       100)
 CONFIG_PARAM_INT("ctl_dir",        0,      0,       1)

@@ -54,7 +54,7 @@ unsigned self_index;
 unsigned command_ttl_ms;
 float max_dc_to_start;
 
-os::config::Param<unsigned> param_pub_rate_ms("pub_rate_ms",     100,      1,   100); // default: 10hz
+os::config::Param<unsigned> param_pub_rate_ms("pub_rate_ms",     40,      1,   100); // default: 25hz
 os::config::Param<unsigned> param_esc_index("esc_index",           0,      0,    15);
 os::config::Param<unsigned> param_cmd_ttl_ms("cmd_ttl_ms",       200,    100,  5000);
 os::config::Param<float> param_cmd_start_dc("cmd_start_dc",      1.0,   0.01,   1.0);
